@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link rel="stylesheet" href="./stylle.css">
+</head>
+<body>
+   <form action="" method="post">
+
+  <label for="name">Full Name</label>
+  <input type="text" id="name" name="name">
+
+  <label for="email">Email</label>
+  <input type="email" id="email" name="email">
+
+  <label for="mobile">Mobile</label>
+  <input type="tel" id="mobile" name="mobile" placeholder="0791234567">
+
+  <label for="governorate">Governorate</label>
+  <select id="governorate" name="governorate">
+    <option value="">Choose a governorate</option>
+    <option value="Amman">Amman</option>
+    <option value="Irbid">Irbid</option>
+    <option value="Aqaba">Aqaba</option>
+    <option value="Zarqa">Zarqa</option>
+  </select>
+
+  <label>Track</label>
+
+  <label class="inline">
+    <input type="radio" name="track" value="Full Stack">
+    Full Stack
+  </label>
+
+  <label class="inline">
+    <input type="radio" name="track" value="Frontend">
+    Frontend
+  </label>
+
+  <label class="inline">
+    <input type="radio" name="track" value="Backend">
+    Backend
+  </label>
+
+  <label>Skills you already have</label>
+
+  <label class="inline">
+    <input type="checkbox" name="skills[]" value="HTML">
+    HTML
+  </label>
+
+  <label class="inline">
+    <input type="checkbox" name="skills[]" value="CSS">
+    CSS
+  </label>
+
+  <label class="inline">
+    <input type="checkbox" name="skills[]" value="JavaScript">
+    JavaScript
+  </label>
+
+  <label for="message">Why do you want to join? (optional)</label>
+  <textarea id="message" name="message" rows="4"></textarea>
+
+  <label class="inline terms">
+    <input type="checkbox" name="agree">
+    I agree to the academy terms
+  </label>
+
+  <button type="submit">Register</button>
+
+</form> 
+</body>
+</html>
