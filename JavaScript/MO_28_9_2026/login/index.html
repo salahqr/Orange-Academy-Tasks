@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div class="login" id="login">
+  <div class="login-container" id="login-container">
+
+    <h1 class="login-title" id="login-title">Login</h1>
+
+    <form class="login-form" id="login-form" autocomplete="off">
+
+      <label for="loginEmail">Email</label><br>
+      <input type="email" class="login-input" id="loginEmail" name="email"><br><br>
+
+      <label for="loginPassword">Password</label><br>
+      <input type="password" class="login-input" id="loginPassword" name="password"><br><br>
+
+      <button type="submit" class="login-button" id="login-button">Login</button>
+
+    </form>
+
+    <p id="loginMsg"></p>
+
+    <p>You don't have an account? <a href="../register/index.html">Sign Up</a></p>
+
+  </div>
+</div>
+
+<script src="./scrpt.js"></script>
+</body>
+</html>

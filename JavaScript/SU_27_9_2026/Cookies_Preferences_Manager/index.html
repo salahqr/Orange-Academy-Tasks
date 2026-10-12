@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Preferences</title>
+
+    <style>
+        body {
+            background-color: antiquewhite;
+            color: black;
+        }
+
+        body.dark {
+            background-color: rgb(40, 32, 45);
+            color: aliceblue;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Preferences</h2>
+
+    <label>Theme:</label>
+
+    <select id="theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+    </select>
+
+    <br><br>
+
+    <label>Language:</label>
+
+    <select id="language">
+        <option value="en">English</option>
+        <option value="ar">Arabic</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="savePreferences()">Save</button>
+
+    <h3>Saved Preferences</h3>
+
+    <p id="saved"></p>
+
+    <script src="./index.js"></script>
+
+</body>
+
+</html>

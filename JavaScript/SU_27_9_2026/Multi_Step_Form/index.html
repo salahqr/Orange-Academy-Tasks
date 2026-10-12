@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Registration</title>
+</head>
+<body>
+
+    <div id="step1">
+        <h2>Step 1 - Personal Information</h2>
+
+        <input id="name" placeholder="Name">
+        <input id="age" placeholder="Age">
+
+        <button onclick="nextStep()">Next</button>
+    </div>
+
+    <div id="step2" style="display: none;">
+        <h2>Step 2 - Educational Information</h2>
+
+        <input id="university" placeholder="University">
+        <input id="major" placeholder="Major">
+
+        <button onclick="previousStep()">Back</button>
+        <button onclick="nextStep()">Next</button>
+    </div>
+
+    <div id="step3" style="display: none;">
+        <h2>Step 3 - Review</h2>
+
+        <p id="review"></p>
+
+        <button onclick="previousStep()">Back</button>
+        <button onclick="confirm()">Confirm</button>
+    </div>
+
+    <script src="./index.js"></script>
+</body>
+</html>
