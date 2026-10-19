@@ -1,39 +1,32 @@
 <?php
-require_once "db.php";
+session_start();
+require_once "user.php";
+require_once "category.php";
+require_once "product.php";
 
-// ---------- Delete handlers (before any SELECT) ----------
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user_id'])) {
-    $id = filter_input(INPUT_POST, 'delete_user_id', FILTER_VALIDATE_INT);
-    if ($id) {
-        $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-    }
-    header("Location: dashboard.php");
+if (!isset($_SESSION["user_id"])) {
+    header("Location: auth.php?mode=login");
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_product_id'])) {
-    $id = filter_input(INPUT_POST, 'delete_product_id', FILTER_VALIDATE_INT);
-    if ($id) {
-        $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-    }
-    header("Location: dashboard.php");
-    exit;
-}
+$users      = (new User())->ReturnUsers();
+$categories = (new Category())->returnCategories();
+$products   = (new Product())->returnProducts();
 
-// ---------- Data for the page ----------
-$totalUsers = $conn->query("SELECT COUNT(*) AS total FROM users")->fetch_assoc()['total'];
-$totalProducts = $conn->query("SELECT COUNT(*) AS total FROM products")->fetch_assoc()['total'];
+// message set by delete.php (e.g. category still has products)
+$flash = $_SESSION["flash"] ?? "";
+unset($_SESSION["flash"]);
 
-$users = $conn->query("SELECT id, username, email FROM users")->fetch_all(MYSQLI_ASSOC);
-$products = $conn->query("SELECT * FROM products")->fetch_all(MYSQLI_ASSOC);
-
-// small helper so the HTML below stays readable
-function e($value): string {
-    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+function deleteForm(string $type, int $id): void
+{
+    ?>
+    <form action="delete.php" method="POST"
+          onsubmit="return confirm('Are you sure?');">
+        <input type="hidden" name="type" value="<?= htmlspecialchars($type) ?>">
+        <input type="hidden" name="id" value="<?= $id ?>">
+        <button type="submit" class="btn btn-delete">Delete</button>
+    </form>
+    <?php
 }
 ?>
 
@@ -43,228 +36,212 @@ function e($value): string {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link rel="stylesheet" href="./dashboard.css">
-</head>
 
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f4f8;
+            margin: 0;
+            color: #222;
+        }
+
+        header {
+            background: #0D1C42;
+            color: #FCF1D0;
+            padding: 20px 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            color: #010736;
+        }
+
+        .table-wrap { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e3e6ec;
+        }
+
+        th {
+            background: #0D1C42;
+            color: #FCF1D0;
+            font-weight: normal;
+        }
+
+        tbody tr:hover { background: #f7f9fc; }
+
+        .empty {
+            text-align: center;
+            color: #888;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 7px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+            color: white;
+        }
+
+        .btn-add    { background: #0D1C42; }
+        .btn-update { background: #2563eb; }
+        .btn-delete { background: #c62828; }
+
+        .btn:hover { opacity: 0.85; }
+
+        form { margin: 0; }
+
+        .flash {
+            background: #fdecea;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
 <body>
 
-<header>
-    <h1>Dashboard</h1>
-    <div>
-        <button id="user">Users</button>
-        <button id="product">Products</button>
-    </div>
-    <button id="logout">Logout</button>
-</header>
+    <header>
+        <h1>Dashboard</h1>
+    </header>
 
-<main>
-    <section id="datastatic">
-        <h3>Number of users: <?= (int)$totalUsers ?></h3>
-        <h3>Number of products: <?= (int)$totalProducts ?></h3>
-    </section>
+    <main>
 
-    <!-- Users section -->
-    <section id="userdata" class="cards" hidden>
-        <h2>Users</h2>
+        <?php if ($flash !== ""): ?>
+            <div class="flash"><?= htmlspecialchars($flash) ?></div>
+        <?php endif; ?>
 
-        <button class="adduser" data-type="user">Add New User</button>
+        <!-- USERS -->
+        <section>
+            <div class="section-head">
+                <h2>Users</h2>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>Email</th><th>Update</th><th>Delete</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($users as $u): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($u["username"]) ?></td>
+                            <td><?= htmlspecialchars($u["email"]) ?></td>
+                            <td><a class="btn btn-update" href="updateUser.php?id=<?= (int)$u["id"] ?>">Update</a></td>
+                            <td><?php deleteForm("user", (int)$u["id"]); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-        <?php foreach ($users as $u): ?>
-            <article class="user-card">
-                <h3><?= e($u['username'] ?? 'No name') ?></h3>
-                <p>ID: <?= (int)$u['id'] ?></p>
-                <p>Email: <?= e($u['email'] ?? 'No email') ?></p>
+        <!-- CATEGORIES -->
+        <section>
+            <div class="section-head">
+                <h2>Categories</h2>
+                <a class="btn btn-add" href="categoryForm.php">+ Add category</a>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Name</th><th>Update</th><th>Delete</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!$categories): ?>
+                            <tr><td colspan="3" class="empty">No categories yet.</td></tr>
+                        <?php endif; ?>
+                        <?php foreach ($categories as $c): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($c["name"]) ?></td>
+                            <td><a class="btn btn-update" href="categoryForm.php?id=<?= (int)$c["id"] ?>">Update</a></td>
+                            <td><?php deleteForm("category", (int)$c["id"]); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-                <button class="info" data-id="<?= (int)$u['id'] ?>" data-type="user">Info</button>
+        <!-- PRODUCTS -->
+        <section>
+            <div class="section-head">
+                <h2>Products</h2>
+                <a class="btn btn-add" href="productForm.php">+ Add product</a>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Category</th>
+                            <th>Update</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!$products): ?>
+                            <tr><td colspan="7" class="empty">No products yet.</td></tr>
+                        <?php endif; ?>
+                        <?php foreach ($products as $p): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($p["productname"]) ?></td>
+                            <td><?= htmlspecialchars($p["description"] ?? "-") ?></td>
+                            <td><?= htmlspecialchars(number_format((float)$p["price"], 2)) ?></td>
+                            <td><?= (int)$p["quantity"] ?></td>
+                            <td><?= htmlspecialchars($p["category"] ?? "-") ?></td>
+                            <td><a class="btn btn-update" href="productForm.php?id=<?= (int)$p["id"] ?>">Update</a></td>
+                            <td><?php deleteForm("product", (int)$p["id"]); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-                <button class="update"
-                        data-type="user"
-                        data-id="<?= (int)$u['id'] ?>"
-                        data-username="<?= e($u['username']) ?>"
-                        data-email="<?= e($u['email']) ?>">Update</button>
-
-                <form method="POST" onsubmit="return confirm('Delete this user?')">
-                    <input type="hidden" name="delete_user_id" value="<?= (int)$u['id'] ?>">
-                    <button class="delete" type="submit">Delete</button>
-                </form>
-            </article>
-        <?php endforeach; ?>
-    </section>
-
-    <!-- Products section -->
-    <section id="productdata" class="cards" hidden>
-        <h2>Products</h2>
-
-        <button class="adduser" data-type="product">Add New Product</button>
-
-        <?php foreach ($products as $p): ?>
-            <article class="user-card">
-                <h3><?= e($p['productname'] ?? 'No name') ?></h3>
-                <p>ID: <?= (int)$p['id'] ?></p>
-
-                <?php if (isset($p['description'])): ?>
-                    <p><?= e($p['description']) ?></p>
-                <?php endif; ?>
-
-                <?php if (isset($p['Price'])): ?>
-                    <p>Price: <?= e($p['Price']) ?></p>
-                <?php endif; ?>
-
-                <?php if (isset($p['Quantity'])): ?>
-                    <p>Quantity: <?= (int)$p['Quantity'] ?></p>
-                <?php endif; ?>
-
-                <button class="info" data-id="<?= (int)$p['id'] ?>" data-type="product">Info</button>
-
-                <button class="update"
-                        data-type="product"
-                        data-id="<?= (int)$p['id'] ?>"
-                        data-productname="<?= e($p['productname']) ?>"
-                        data-description="<?= e($p['description']) ?>"
-                        data-price="<?= e($p['Price']) ?>"
-                        data-quantity="<?= e($p['Quantity']) ?>">Update</button>
-
-                <form method="POST" onsubmit="return confirm('Delete this product?')">
-                    <input type="hidden" name="delete_product_id" value="<?= (int)$p['id'] ?>">
-                    <button class="delete" type="submit">Delete</button>
-                </form>
-            </article>
-        <?php endforeach; ?>
-    </section>
-</main>
-
-<!-- User popup (Add + Update) -->
-<dialog id="userDialog">
-    <form method="POST" action="user.php">
-        <h2 id="userDialogTitle">User</h2>
-
-        <input type="hidden" name="id" id="user_id">
-
-        <label>Username
-            <input type="text" name="username" id="user_username" maxlength="30" required>
-        </label>
-
-        <label>Email
-            <input type="email" name="email" id="user_email" maxlength="50" required>
-        </label>
-
-        <label>Password
-            <input type="password" name="password" id="user_password">
-        </label>
-
-        <button type="submit">Save</button>
-        <button type="button" class="cancel">Cancel</button>
-    </form>
-</dialog>
-
-<!-- Product popup (Add + Update) -->
-<dialog id="productDialog">
-    <form method="POST" action="product.php">
-        <h2 id="productDialogTitle">Product</h2>
-
-        <input type="hidden" name="id" id="product_id">
-
-        <label>Name
-            <input type="text" name="productname" id="product_productname" maxlength="30" required>
-        </label>
-
-        <label>Description
-            <input type="text" name="description" id="product_description" maxlength="255">
-        </label>
-
-        <label>Price
-            <input type="number" name="price" id="product_price" step="0.01" min="0" required>
-        </label>
-
-        <label>Quantity
-            <input type="number" name="quantity" id="product_quantity" min="0" required>
-        </label>
-
-        <button type="submit">Save</button>
-        <button type="button" class="cancel">Cancel</button>
-    </form>
-</dialog>
-
-<script>
-    const userBtn = document.getElementById('user');
-    const productBtn = document.getElementById('product');
-    const userData = document.getElementById('userdata');
-    const productData = document.getElementById('productdata');
-
-    const userDialog = document.getElementById('userDialog');
-    const productDialog = document.getElementById('productDialog');
-
-    userBtn.addEventListener('click', () => {
-        userData.hidden = false;
-        productData.hidden = true;
-    });
-
-    productBtn.addEventListener('click', () => {
-        productData.hidden = false;
-        userData.hidden = true;
-    });
-
-    document.getElementById('logout').addEventListener('click', () => {
-        location.href = 'login.php';
-    });
-
-    // Cancel buttons close their own dialog
-    document.querySelectorAll('dialog .cancel').forEach(btn => {
-        btn.addEventListener('click', () => btn.closest('dialog').close());
-    });
-
-    // ----- ADD -----
-    document.querySelectorAll('.adduser').forEach(button => {
-        button.addEventListener('click', () => {
-            if (button.dataset.type === 'user') {
-                userDialog.querySelector('form').reset();
-                document.getElementById('user_id').value = '';
-                document.getElementById('user_password').required = true;
-                document.getElementById('userDialogTitle').textContent = 'Add User';
-                userDialog.showModal();
-            } else {
-                productDialog.querySelector('form').reset();
-                document.getElementById('product_id').value = '';
-                document.getElementById('productDialogTitle').textContent = 'Add Product';
-                productDialog.showModal();
-            }
-        });
-    });
-
-    // ----- UPDATE -----
-    document.querySelectorAll('.update').forEach(button => {
-        button.addEventListener('click', () => {
-            const d = button.dataset;
-
-            if (d.type === 'user') {
-                userDialog.querySelector('form').reset();
-                document.getElementById('user_id').value = d.id;
-                document.getElementById('user_username').value = d.username;
-                document.getElementById('user_email').value = d.email;
-                document.getElementById('user_password').required = false;
-                document.getElementById('user_password').placeholder = 'Leave empty to keep current';
-                document.getElementById('userDialogTitle').textContent = 'Update User';
-                userDialog.showModal();
-            } else {
-                productDialog.querySelector('form').reset();
-                document.getElementById('product_id').value = d.id;
-                document.getElementById('product_productname').value = d.productname;
-                document.getElementById('product_description').value = d.description;
-                document.getElementById('product_price').value = d.price;
-                document.getElementById('product_quantity').value = d.quantity;
-                document.getElementById('productDialogTitle').textContent = 'Update Product';
-                productDialog.showModal();
-            }
-        });
-    });
-
-    // ----- INFO (still a placeholder) -----
-    document.querySelectorAll('.info').forEach(button => {
-        button.addEventListener('click', () => {
-            alert('Info ' + button.dataset.type + ' ID: ' + button.dataset.id);
-        });
-    });
-</script>
+    </main>
 
 </body>
 </html>

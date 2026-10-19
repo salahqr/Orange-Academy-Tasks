@@ -1,46 +1,57 @@
 <?php
 require_once "db.php";
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: dashboard.php");
-    exit;
+class Product
+{
+    private PDO $conn;
+
+    public function __construct()
+    {
+        global $conn;
+        $this->conn = $conn;    
+    }
+
+public function returnProducts(): array
+{
+    $sql = "SELECT p.id, p.productname, p.description, p.price, p.quantity,
+                   c.name AS category
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            ORDER BY p.id DESC";
+    return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 }
 
-$id          = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-$productname = trim($_POST['productname'] ?? '');
-$description = trim($_POST['description'] ?? '');
-$price       = filter_input(INPUT_POST, 'price', FILTER_VALIDATE_FLOAT);
-$quantity    = filter_input(INPUT_POST, 'quantity', FILTER_VALIDATE_INT);
-
-if ($productname === '' || strlen($productname) > 30) {
-    die("Invalid product name.");
-}
-if (strlen($description) > 255) {
-    die("Description is too long.");
-}
-if ($price === false || $price === null || $price < 0) {
-    die("Invalid price.");
-}
-if ($quantity === false || $quantity === null || $quantity < 0) {
-    die("Invalid quantity.");
-}
-
-if ($id) {
-    // UPDATE
-    $stmt = $conn->prepare(
-        "UPDATE products SET productname = ?, description = ?, Price = ?, Quantity = ? WHERE id = ?"
+public function findProduct(int $id)
+{
+    $stmt = $this->conn->prepare(
+        "SELECT id, productname, description, price, quantity, category_id
+         FROM products WHERE id = ?"
     );
-    $stmt->bind_param("ssdii", $productname, $description, $price, $quantity, $id);
-} else {
-    // INSERT
-    $stmt = $conn->prepare(
-        "INSERT INTO products (productname, description, Price, Quantity, created_at)
-         VALUES (?, ?, ?, ?, CURDATE())"
-    );
-    $stmt->bind_param("ssdi", $productname, $description, $price, $quantity);
+    $stmt->execute([$id]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-$stmt->execute();
+public function createProduct(string $name, ?string $description, float $price, int $quantity, int $categoryId): bool
+{
+    $stmt = $this->conn->prepare(
+        "INSERT INTO products (productname, description, price, quantity, category_id)
+         VALUES (?, ?, ?, ?, ?)"
+    );
+    return $stmt->execute([$name, $description, $price, $quantity, $categoryId]);
+}
 
-header("Location: dashboard.php");
-exit;
+public function updateProduct(int $id, string $name, ?string $description, float $price, int $quantity, int $categoryId): bool
+{
+    $stmt = $this->conn->prepare(
+        "UPDATE products
+         SET productname = ?, description = ?, price = ?, quantity = ?, category_id = ?
+         WHERE id = ?"
+    );
+    return $stmt->execute([$name, $description, $price, $quantity, $categoryId, $id]);
+}
+    public function deleteProduct(int $id): bool
+    {
+        $stmt = $this->conn->prepare("DELETE FROM products WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+}
