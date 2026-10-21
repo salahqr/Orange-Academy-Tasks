@@ -13,7 +13,7 @@ class Product
 
 public function returnProducts(): array
 {
-    $sql = "SELECT p.id, p.productname, p.description, p.price, p.quantity,
+    $sql = "SELECT p.id, p.productname, p.description, p.price, p.quantity, p.imageUrl,
                    c.name AS category
             FROM products p
             JOIN categories c ON c.id = p.category_id
@@ -31,23 +31,23 @@ public function findProduct(int $id)
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-public function createProduct(string $name, ?string $description, float $price, int $quantity, int $categoryId): bool
+public function createProduct(string $name, ?string $description, float $price, int $quantity, int $categoryId, string $imageUrl): bool
 {
     $stmt = $this->conn->prepare(
-        "INSERT INTO products (productname, description, price, quantity, category_id)
-         VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO products (productname, description, price, quantity, category_id, imageUrl)
+         VALUES (?, ?, ?, ?, ?, ?)"
     );
-    return $stmt->execute([$name, $description, $price, $quantity, $categoryId]);
+    return $stmt->execute([$name, $description, $price, $quantity, $categoryId, $imageUrl]);
 }
 
-public function updateProduct(int $id, string $name, ?string $description, float $price, int $quantity, int $categoryId): bool
+public function updateProduct(int $id, string $name, ?string $description, float $price, int $quantity, int $categoryId, string $imageUrl): bool
 {
     $stmt = $this->conn->prepare(
         "UPDATE products
-         SET productname = ?, description = ?, price = ?, quantity = ?, category_id = ?
+         SET productname = ?, description = ?, price = ?, quantity = ?, category_id = ?, imageUrl = ?
          WHERE id = ?"
     );
-    return $stmt->execute([$name, $description, $price, $quantity, $categoryId, $id]);
+    return $stmt->execute([$name, $description, $price, $quantity, $categoryId, $id, $imageUrl]);
 }
     public function deleteProduct(int $id): bool
     {
@@ -55,3 +55,4 @@ public function updateProduct(int $id, string $name, ?string $description, float
         return $stmt->execute([$id]);
     }
 }
+//imageUrl

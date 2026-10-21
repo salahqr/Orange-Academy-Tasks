@@ -37,6 +37,7 @@ try {
             description VARCHAR(255),
             price DECIMAL(10,2) NOT NULL,
             quantity INT NOT NULL DEFAULT 0,
+            imageUrl VARCHAR(255),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
             FOREIGN KEY (category_id)

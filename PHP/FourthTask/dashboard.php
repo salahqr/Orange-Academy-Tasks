@@ -95,6 +95,7 @@ function deleteForm(string $type, int $id): void
             padding: 12px 14px;
             text-align: left;
             border-bottom: 1px solid #e3e6ec;
+            vertical-align: middle;
         }
 
         th {
@@ -108,6 +109,14 @@ function deleteForm(string $type, int $id): void
         .empty {
             text-align: center;
             color: #888;
+        }
+
+        .thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            display: block;
         }
 
         .btn {
@@ -212,6 +221,7 @@ function deleteForm(string $type, int $id): void
                 <table>
                     <thead>
                         <tr>
+                            <th>Image</th>
                             <th>Name</th>
                             <th>Description</th>
                             <th>Price</th>
@@ -223,10 +233,17 @@ function deleteForm(string $type, int $id): void
                     </thead>
                     <tbody>
                         <?php if (!$products): ?>
-                            <tr><td colspan="7" class="empty">No products yet.</td></tr>
+                            <tr><td colspan="8" class="empty">No products yet.</td></tr>
                         <?php endif; ?>
                         <?php foreach ($products as $p): ?>
                         <tr>
+                            <td>
+                                <?php if (!empty($p["image"])): ?>
+                                    <img src="<?= htmlspecialchars($p["image"]) ?>" alt="" class="thumb">
+                                <?php else: ?>
+                                    -
+                                <?php endif; ?>
+                            </td>
                             <td><?= htmlspecialchars($p["productname"]) ?></td>
                             <td><?= htmlspecialchars($p["description"] ?? "-") ?></td>
                             <td><?= htmlspecialchars(number_format((float)$p["price"], 2)) ?></td>
